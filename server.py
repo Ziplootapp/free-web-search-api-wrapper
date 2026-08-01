@@ -23,8 +23,9 @@ def perform_web_search(query):
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        links = re.findall(r'<a[^>]+class=['"]result__a['"][^>]+href=['"]([^'"]+)['"][^>]*>(.*?)</a>', html, re.I | re.S)
-        snippets = re.findall(r'<(?:a|div)[^>]+class=['"]result__snippet['"][^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        # Match class="result__a" links
+        links = re.findall(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
+        snippets = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
         
         for i, (link, title) in enumerate(links[:10]):
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
