@@ -19,27 +19,33 @@ def perform_web_search(query):
         }
     )
     results = []
+    seen_urls = set()
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        matches = re.findall(r'<a[^>]+class=['"]result__a['"][^>]+href=['"]([^'"]+)['"][^>]*>(.*?)</a>', html, re.I | re.S)
-        snippets = re.findall(r'<(?:a|div)[^>]+class=['"]result__snippet['"][^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        a_tags = re.findall(r'<a[^>]+href=['"]([^'"]+)['"][^>]*>(.*?)</a>', html, re.I | re.S)
         
-        for i, (link, title) in enumerate(matches[:10]):
-            clean_title = re.sub(r'<[^>]+>', '', title).strip()
-            snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
-            
-            if 'uddg=' in link:
-                clean_url = urllib.parse.unquote(link.split('uddg=')[1].split('&')[0])
-            else:
-                clean_url = link
+        for href, text in a_tags:
+            clean_text = re.sub(r'<[^>]+>', '', text).strip()
+            if 'uddg=' in href:
+                href = urllib.parse.unquote(href.split('uddg=')[1].split('&')[0])
                 
+            if not href.startswith('http') or 'duckduckgo.com' in href:
+                continue
+            if href in seen_urls:
+                continue
+            if len(clean_text) < 5 or clean_text.startswith('http'):
+                continue
+                
+            seen_urls.add(href)
             results.append({
-                "title": clean_title,
-                "url": clean_url,
-                "snippet": snippet_text
+                "title": clean_text,
+                "url": href,
+                "snippet": clean_text
             })
+            if len(results) >= 10:
+                break
     except Exception as e:
         print("[ERROR during web search]:", e)
         
