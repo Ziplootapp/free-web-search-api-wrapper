@@ -2,9 +2,48 @@
 import json
 import urllib.request
 import urllib.parse
+import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 PORT = 8000
+
+def perform_web_search(query):
+    url = "https://html.duckduckgo.com/html/"
+    data = urllib.parse.urlencode({'q': query}).encode('utf-8')
+    req = urllib.request.Request(
+        url, 
+        data=data, 
+        headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    )
+    results = []
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode('utf-8', errors='ignore')
+            
+        matches = re.findall(r'<a[^>]+class=['"]result__a['"][^>]+href=['"]([^'"]+)['"][^>]*>(.*?)</a>', html, re.I | re.S)
+        snippets = re.findall(r'<(?:a|div)[^>]+class=['"]result__snippet['"][^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        
+        for i, (link, title) in enumerate(matches[:10]):
+            clean_title = re.sub(r'<[^>]+>', '', title).strip()
+            snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
+            
+            if 'uddg=' in link:
+                clean_url = urllib.parse.unquote(link.split('uddg=')[1].split('&')[0])
+            else:
+                clean_url = link
+                
+            results.append({
+                "title": clean_title,
+                "url": clean_url,
+                "snippet": snippet_text
+            })
+    except Exception as e:
+        print("[ERROR during web search]:", e)
+        
+    return results
 
 class SearchAPIHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -16,42 +55,28 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": "Query parameter 'q' is required"}).encode("utf-8"))
+                self.wfile.write(json.dumps({"error": "Query parameter 'q' is required"}, indent=2).encode("utf-8"))
                 return
 
             print(f"[INFO] Processing web search query: {query}")
-            # DuckDuckGo HTML scraping
-            search_url = "https://html.duckduckgo.com/html/"
-            data = urllib.parse.urlencode({'q': query}).encode('utf-8')
-            req = urllib.request.Request(search_url, data=data, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, method="POST")
+            results = perform_web_search(query)
 
-            try:
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    html = resp.read().decode('utf-8', errors='ignore')
-
-                results = []
-                from re import findall
-                raw_results = findall(r'<a class="result__url" href="([^"]+)".*?<a class="result__snippet[^>]*>(.*?)</a>', html)
-                
-                for link, snippet in raw_results[:10]:
-                    clean_snippet = snippet.replace('<b>', '').replace('</b>', '').strip()
-                    results.append({"url": link.strip(), "snippet": clean_snippet})
-
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps({"query": query, "results": results}, indent=2).encode("utf-8"))
-            except Exception as e:
-                self.send_response(500)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response_payload = {
+                "status": "success",
+                "query": query,
+                "total_results": len(results),
+                "results": results
+            }
+            self.wfile.write(json.dumps(response_payload, indent=2).encode("utf-8"))
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
             self.end_headers()
-            self.wfile.write(b"<h1>ZipLoot Free Web Search REST API is Live!</h1><p>Use /api/search?q=your+query</p>")
+            self.wfile.write(b"<h1>ZipLoot Free Web Search REST API Gateway is Live!</h1><p>Use <code>/api/search?q=python</code> to query search results.</p>")
 
 def run_server():
     httpd = HTTPServer(("0.0.0.0", PORT), SearchAPIHandler)
