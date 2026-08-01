@@ -19,26 +19,22 @@ def perform_web_search(query):
         }
     )
     results = []
-    seen_urls = set()
+    seen = set()
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        a_tags = re.findall(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
+        a_tags = re.findall(r'<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)</a>', html, re.I | re.S)
         
         for href, text in a_tags:
             clean_text = re.sub(r'<[^>]+>', '', text).strip()
             if 'uddg=' in href:
                 href = urllib.parse.unquote(href.split('uddg=')[1].split('&')[0])
                 
-            if not href.startswith('http') or 'duckduckgo.com' in href:
-                continue
-            if href in seen_urls:
-                continue
-            if len(clean_text) < 5 or clean_text.startswith('http'):
+            if not href.startswith('http') or 'duckduckgo.com' in href or href in seen or len(clean_text) < 5 or clean_text.startswith('http'):
                 continue
                 
-            seen_urls.add(href)
+            seen.add(href)
             results.append({
                 "title": clean_text,
                 "url": href,
