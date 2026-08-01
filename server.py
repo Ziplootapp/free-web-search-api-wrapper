@@ -25,12 +25,14 @@ def perform_web_search(query):
         with urllib.request.urlopen(req, timeout=6) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        matches = re.findall(r'<a\s+[^>]*class=["']result__a["'][^>]*href=["']([^"']+)["'][^>]*>(.*?)</a>|<a\s+[^>]*href=["']([^"']+)["'][^>]*class=["']result__a["'][^>]*>(.*?)</a>', html, re.I | re.S)
-        snippets = re.findall(r'<(?:a|div)[^>]+class=["']result__snippet["'][^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        pattern1 = r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>'
+        pattern2 = r'<a[^>]+href="([^"]+)"[^>]*class="result__a"[^>]*>(.*?)</a>'
+        matches = re.findall(pattern1, html, re.I | re.S) + re.findall(pattern2, html, re.I | re.S)
+        snippets = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
         
         for i, m in enumerate(matches[:10]):
-            link = m[0] if m[0] else m[2]
-            title = m[1] if m[1] else m[3]
+            link = m[0]
+            title = m[1]
             
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
             snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
@@ -89,10 +91,6 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         .search-btn:hover { background: #4f46e5; }
         .json-card { background: #0b1120; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         pre { font-family: 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; color: #38bdf8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
-        .string { color: #38bdf8; }
-        .number { color: #fbbf24; }
-        .boolean { color: #f472b6; }
-        .key { color: #93c5fd; }
     </style>
 </head>
 <body>
