@@ -15,47 +15,66 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
 def perform_web_search(query):
     results = []
     
-    # 1. Primary Engine: DuckDuckGo HTML / Lite Scraping
+    # Engine 1: Bing Global Search Engine
     try:
-        url = "https://html.duckduckgo.com/html/"
-        data = urllib.parse.urlencode({'q': query}).encode('utf-8')
+        bing_url = f"https://www.bing.com/search?q={urllib.parse.quote(query)}"
         req = urllib.request.Request(
-            url, 
-            data=data, 
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
+            bing_url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'}
         )
-        with urllib.request.urlopen(req, timeout=6) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        pattern1 = r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>'
-        pattern2 = r'<a[^>]+href="([^"]+)"[^>]*class="result__a"[^>]*>(.*?)</a>'
-        matches = re.findall(pattern1, html, re.I | re.S) + re.findall(pattern2, html, re.I | re.S)
-        snippets = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        links_titles = re.findall(r'<h2[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
+        snippets = re.findall(r'<p[^>]*class="[^"]*b_algoSlug[^"]*"[^>]*>(.*?)</p>|<div[^>]*class="[^"]*b_caption[^"]*"[^>]*>(.*?)div>', html, re.I | re.S)
         
-        for i, m in enumerate(matches[:10]):
-            link = m[0]
-            title = m[1]
-            
+        for i, (link, title) in enumerate(links_titles[:10]):
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
-            snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "ZipLoot Developer Platform & Free AI Utilities."
+            snip_raw = snippets[i][0] if i < len(snippets) and snippets[i][0] else (snippets[i][1] if i < len(snippets) else "")
+            clean_snippet = re.sub(r'<[^>]+>', '', snip_raw).strip()
             
-            if 'uddg=' in link:
-                clean_url = urllib.parse.unquote(link.split('uddg=')[1].split('&')[0])
-            else:
-                clean_url = link
-                
-            results.append({
-                "title": clean_title,
-                "url": clean_url,
-                "snippet": snippet_text
-            })
+            if link.startswith('http') and 'bing.com' not in link and 'microsoft.com' not in link:
+                results.append({
+                    "title": clean_title,
+                    "url": link,
+                    "snippet": clean_snippet or "ZipLoot Developer Platform & Free AI Utilities."
+                })
     except Exception as e:
-        print("[INFO] Engine 1 DDG HTML fallback:", e)
+        print("[INFO Engine 1 Bing]:", e)
 
-    # 2. Secondary Engine: Wikipedia Search API Fallback if Engine 1 returns empty
+    # Engine 2: DuckDuckGo Search Engine Fallback
+    if not results:
+        try:
+            url = "https://html.duckduckgo.com/html/"
+            data = urllib.parse.urlencode({'q': query}).encode('utf-8')
+            req = urllib.request.Request(
+                url, 
+                data=data, 
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                html = resp.read().decode('utf-8', errors='ignore')
+                
+            pattern1 = r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>'
+            pattern2 = r'<a[^>]+href="([^"]+)"[^>]*class="result__a"[^>]*>(.*?)</a>'
+            matches = re.findall(pattern1, html, re.I | re.S) + re.findall(pattern2, html, re.I | re.S)
+            snips = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+            
+            for i, m in enumerate(matches[:10]):
+                link = m[0]
+                title = m[1]
+                clean_title = re.sub(r'<[^>]+>', '', title).strip()
+                snippet_text = re.sub(r'<[^>]+>', '', snips[i]).strip() if i < len(snips) else "ZipLoot Developer Platform."
+                clean_url = urllib.parse.unquote(link.split('uddg=')[1].split('&')[0]) if 'uddg=' in link else link
+                results.append({
+                    "title": clean_title,
+                    "url": clean_url,
+                    "snippet": snippet_text
+                })
+        except Exception as e:
+            print("[INFO Engine 2 DDG]:", e)
+
+    # Engine 3: Wikipedia Search API Fallback
     if not results:
         try:
             wiki_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
@@ -72,7 +91,7 @@ def perform_web_search(query):
                         "snippet": clean_snippet
                     })
         except Exception as e:
-            print("[INFO] Engine 2 Wiki API error:", e)
+            print("[INFO Engine 3 Wiki]:", e)
 
     return results
 
