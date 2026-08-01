@@ -5,7 +5,6 @@ import urllib.parse
 import re
 import socketserver
 import webbrowser
-import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 PORT = 8000
@@ -41,7 +40,7 @@ def perform_web_search(query):
             title = m[1]
             
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
-            snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
+            snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "ZipLoot Developer Platform & Free AI Utilities."
             
             if 'uddg=' in link:
                 clean_url = urllib.parse.unquote(link.split('uddg=')[1].split('&')[0])
@@ -105,7 +104,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         <div class="header-subtitle">Type a search query below to get instant structured JSON results without any API key!</div>
         
         <div class="search-bar-row">
-            <input type="text" id="queryInput" class="search-input" value="deepseek r1 api" placeholder="Type a search query..." onkeydown="if(event.key==='Enter') runSearch()">
+            <input type="text" id="queryInput" class="search-input" value="ziploot vercel" placeholder="Type a search query..." onkeydown="if(event.key==='Enter') runSearch()">
             <button id="searchBtn" class="search-btn" onclick="runSearch()">Search API</button>
         </div>
 
@@ -173,12 +172,8 @@ def run_server():
     print(f"==================================================")
     print(f"  ZIPLOOT FREE WEB SEARCH REST API IS LIVE!       ")
     print(f"  Web Dashboard: http://localhost:{PORT}/")
-    print(f"  API Endpoint:  http://localhost:{PORT}/api/search?q=deepseek+r1+api")
+    print(f"  API Endpoint:  http://localhost:{PORT}/api/search?q=ziploot+vercel")
     print(f"==================================================")
-    try:
-        webbrowser.open(f"http://localhost:{PORT}/")
-    except Exception:
-        pass
     httpd.serve_forever()
 
 if __name__ == "__main__":
