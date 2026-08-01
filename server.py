@@ -100,8 +100,8 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #070b14; color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 40px 20px; display: flex; justify-content: center; }
-        .wrapper { max-width: 960px; width: 100%; }
+        body { background: #070b14; color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 0 0 40px 0; display: flex; flex-direction: column; align-items: center; }
+        .wrapper { max-width: 960px; width: 100%; padding: 40px 20px; }
         .header-title { font-size: 26px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
         .header-subtitle { color: #94a3b8; font-size: 15px; margin-bottom: 28px; }
         .search-bar-row { display: flex; gap: 12px; margin-bottom: 30px; }
@@ -114,6 +114,13 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     </style>
 </head>
 <body>
+    <!-- ZipLoot Official Brand Header -->
+    <div id="ziploot-official-bar" style="position: relative; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; margin: 0 !important; top: 0 !important; left: 0 !important; z-index: 9999999 !important; background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%) !important; border-bottom: 1px solid rgba(99, 102, 241, 0.4) !important; padding: 8px 16px !important; text-align: center !important; font-family: system-ui, -apple-system, sans-serif !important; font-size: 13.5px !important; font-weight: 600 !important; color: #f8fafc !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 12px !important; flex-wrap: wrap !important; box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;">
+        <span>🚀 Official Portal: <a href="https://ziploot.app" target="_blank" rel="noopener" style="color: #818cf8 !important; text-decoration: none !important; font-weight: 700 !important; border-bottom: 1px solid #818cf8 !important;">ziploot.app</a></span>
+        <span style="color: #64748b !important;">•</span>
+        <span>Ecosystem Mirror: <a href="https://ziploot.vercel.app" target="_blank" rel="noopener" style="color: #38bdf8 !important; text-decoration: none !important; font-weight: 600 !important;">ziploot.vercel.app</a></span>
+    </div>
+
     <div class="wrapper">
         <div class="header-title">🚀 ZipLoot Free Web Search API (SerpAPI Alternative)</div>
         <div class="header-subtitle">Type a search query below to get instant structured JSON results without any API key!</div>
