@@ -23,11 +23,13 @@ def perform_web_search(query):
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        # Match class="result__a" links
-        links = re.findall(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
-        snippets = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        matches = re.findall(r'<a\s+[^>]*class=["']result__a["'][^>]*href=["']([^"']+)["'][^>]*>(.*?)</a>|<a\s+[^>]*href=["']([^"']+)["'][^>]*class=["']result__a["'][^>]*>(.*?)</a>', html, re.I | re.S)
+        snippets = re.findall(r'<(?:a|div)[^>]+class=["']result__snippet["'][^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
         
-        for i, (link, title) in enumerate(links[:10]):
+        for i, m in enumerate(matches[:10]):
+            link = m[0] if m[0] else m[2]
+            title = m[1] if m[1] else m[3]
+            
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
             snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
             
