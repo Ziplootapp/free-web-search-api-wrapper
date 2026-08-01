@@ -24,7 +24,8 @@ def perform_web_search(query):
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        a_tags = re.findall(r'<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)</a>', html, re.I | re.S)
+        pattern = r'<a\s+[^>]*href="([^"]+)"[^>]*>(.*?)</a>'
+        a_tags = re.findall(pattern, html, re.I | re.S)
         
         for href, text in a_tags:
             clean_text = re.sub(r'<[^>]+>', '', text).strip()
