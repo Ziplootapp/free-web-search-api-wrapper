@@ -56,7 +56,7 @@ def perform_web_search(query):
                     clean_snippet = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
                     results.append({
                         "title": item.get('title'),
-                        "url': f"https://en.wikipedia.org/wiki/{urllib.parse.quote(item.get('title'))}",
+                        "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(item.get('title'))}",
                         "snippet": clean_snippet
                     })
         except Exception as e:
