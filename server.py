@@ -8,29 +8,27 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 PORT = 8000
 
 def perform_web_search(query):
-    url = "https://html.duckduckgo.com/html/"
-    data = urllib.parse.urlencode({'q': query}).encode('utf-8')
-    req = urllib.request.Request(
-        url, 
-        data=data, 
-        headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-    )
     results = []
+    
+    # Engine 1: DuckDuckGo HTML / Lite Scraping
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        url = "https://html.duckduckgo.com/html/"
+        data = urllib.parse.urlencode({'q': query}).encode('utf-8')
+        req = urllib.request.Request(
+            url, 
+            data=data, 
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        pattern1 = r'<a\s+[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>'
-        pattern2 = r'<a\s+[^>]*href="([^"]+)"[^>]*class="result__a"[^>]*>(.*?)</a>'
-        
-        matches = re.findall(pattern1, html, re.I | re.S) + re.findall(pattern2, html, re.I | re.S)
+        links = re.findall(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
         snippets = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
         
-        seen_urls = set()
-        for i, (link, title) in enumerate(matches[:10]):
+        for i, (link, title) in enumerate(links[:10]):
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
             snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
             
@@ -39,18 +37,31 @@ def perform_web_search(query):
             else:
                 clean_url = link
                 
-            if clean_url in seen_urls:
-                continue
-            seen_urls.add(clean_url)
-            
             results.append({
                 "title": clean_title,
                 "url": clean_url,
                 "snippet": snippet_text
             })
     except Exception as e:
-        print("[ERROR during web search]:", e)
-        
+        print("[INFO] Engine 1 fallback trigger:", e)
+
+    # Engine 2: Wikipedia Search API Fallback if Engine 1 returns empty
+    if not results:
+        try:
+            wiki_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
+            req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                for item in data.get('query', {}).get('search', [])[:10]:
+                    clean_snippet = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
+                    results.append({
+                        "title": item.get('title'),
+                        "url': f"https://en.wikipedia.org/wiki/{urllib.parse.quote(item.get('title'))}",
+                        "snippet": clean_snippet
+                    })
+        except Exception as e:
+            print("[INFO] Engine 2 fallback trigger:", e)
+
     return results
 
 class SearchAPIHandler(BaseHTTPRequestHandler):
