@@ -23,13 +23,14 @@ def perform_web_search(query):
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
-        matches = re.findall(r'<a\s+[^>]*class=["']result__a["'][^>]*href=["']([^"']+)["'][^>]*>(.*?)</a>|<a\s+[^>]*href=["']([^"']+)["'][^>]*class=["']result__a["'][^>]*>(.*?)</a>', html, re.I | re.S)
-        snippets = re.findall(r'<(?:a|div)[^>]+class=["']result__snippet["'][^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        pattern1 = r'<a\s+[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>'
+        pattern2 = r'<a\s+[^>]*href="([^"]+)"[^>]*class="result__a"[^>]*>(.*?)</a>'
         
-        for i, m in enumerate(matches[:10]):
-            link = m[0] if m[0] else m[2]
-            title = m[1] if m[1] else m[3]
-            
+        matches = re.findall(pattern1, html, re.I | re.S) + re.findall(pattern2, html, re.I | re.S)
+        snippets = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+        
+        seen_urls = set()
+        for i, (link, title) in enumerate(matches[:10]):
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
             snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
             
@@ -38,6 +39,10 @@ def perform_web_search(query):
             else:
                 clean_url = link
                 
+            if clean_url in seen_urls:
+                continue
+            seen_urls.add(clean_url)
+            
             results.append({
                 "title": clean_title,
                 "url": clean_url,
