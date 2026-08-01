@@ -4,6 +4,8 @@ import urllib.request
 import urllib.parse
 import re
 import socketserver
+import webbrowser
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 PORT = 8000
@@ -14,7 +16,7 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
 def perform_web_search(query):
     results = []
     
-    # 1. DuckDuckGo Search Engine
+    # 1. Primary Engine: DuckDuckGo HTML / Lite Scraping
     try:
         url = "https://html.duckduckgo.com/html/"
         data = urllib.parse.urlencode({'q': query}).encode('utf-8')
@@ -26,7 +28,7 @@ def perform_web_search(query):
                 'Content-Type': 'application/x-www-form-urlencoded'
             }
         )
-        with urllib.request.urlopen(req, timeout=4) as resp:
+        with urllib.request.urlopen(req, timeout=6) as resp:
             html = resp.read().decode('utf-8', errors='ignore')
             
         pattern1 = r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>'
@@ -54,12 +56,12 @@ def perform_web_search(query):
     except Exception as e:
         print("[INFO] Engine 1 DDG HTML fallback:", e)
 
-    # 2. Wikipedia Search API Fallback if Engine 1 returns empty
+    # 2. Secondary Engine: Wikipedia Search API Fallback if Engine 1 returns empty
     if not results:
         try:
             wiki_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
             req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-            with urllib.request.urlopen(req, timeout=4) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 for item in data.get('query', {}).get('search', [])[:10]:
                     clean_snippet = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
@@ -173,6 +175,10 @@ def run_server():
     print(f"  Web Dashboard: http://localhost:{PORT}/")
     print(f"  API Endpoint:  http://localhost:{PORT}/api/search?q=deepseek+r1+api")
     print(f"==================================================")
+    try:
+        webbrowser.open(f"http://localhost:{PORT}/")
+    except Exception:
+        pass
     httpd.serve_forever()
 
 if __name__ == "__main__":
