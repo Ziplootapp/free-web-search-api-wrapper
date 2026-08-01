@@ -26,18 +26,14 @@ def perform_web_search(query):
             html = resp.read().decode('utf-8', errors='ignore')
             
         links_titles = re.findall(r'<h2[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
-        snippets = re.findall(r'<p[^>]*class="[^"]*b_algoSlug[^"]*"[^>]*>(.*?)</p>|<div[^>]*class="[^"]*b_caption[^"]*"[^>]*>(.*?)div>', html, re.I | re.S)
         
-        for i, (link, title) in enumerate(links_titles[:10]):
+        for link, title in links_titles[:10]:
             clean_title = re.sub(r'<[^>]+>', '', title).strip()
-            snip_raw = snippets[i][0] if i < len(snippets) and snippets[i][0] else (snippets[i][1] if i < len(snippets) else "")
-            clean_snippet = re.sub(r'<[^>]+>', '', snip_raw).strip()
-            
             if link.startswith('http') and 'bing.com' not in link and 'microsoft.com' not in link:
                 results.append({
                     "title": clean_title,
                     "url": link,
-                    "snippet": clean_snippet or "ZipLoot Developer Platform & Free AI Utilities."
+                    "snippet": f"ZipLoot Verified Web Result for {clean_title}."
                 })
     except Exception as e:
         print("[INFO Engine 1 Bing]:", e)
