@@ -10,57 +10,23 @@ PORT = 8000
 def perform_web_search(query):
     results = []
     
-    # Engine 1: DuckDuckGo HTML / Lite Scraping
+    # 1. Primary Engine: Wikipedia & Web REST API Search
     try:
-        url = "https://html.duckduckgo.com/html/"
-        data = urllib.parse.urlencode({'q': query}).encode('utf-8')
-        req = urllib.request.Request(
-            url, 
-            data=data, 
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            html = resp.read().decode('utf-8', errors='ignore')
-            
-        links = re.findall(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
-        snippets = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
-        
-        for i, (link, title) in enumerate(links[:10]):
-            clean_title = re.sub(r'<[^>]+>', '', title).strip()
-            snippet_text = re.sub(r'<[^>]+>', '', snippets[i]).strip() if i < len(snippets) else "No snippet available."
-            
-            if 'uddg=' in link:
-                clean_url = urllib.parse.unquote(link.split('uddg=')[1].split('&')[0])
-            else:
-                clean_url = link
-                
-            results.append({
-                "title": clean_title,
-                "url": clean_url,
-                "snippet": snippet_text
-            })
+        wiki_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
+        req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            for item in data.get('query', {}).get('search', [])[:10]:
+                clean_snippet = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
+                title = item.get('title', '')
+                clean_url = "https://en.wikipedia.org/wiki/" + urllib.parse.quote(title)
+                results.append({
+                    "title": title,
+                    "url": clean_url,
+                    "snippet": clean_snippet
+                })
     except Exception as e:
-        print("[INFO] Engine 1 fallback trigger:", e)
-
-    # Engine 2: Wikipedia Search API Fallback if Engine 1 returns empty
-    if not results:
-        try:
-            wiki_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
-            req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode('utf-8'))
-                for item in data.get('query', {}).get('search', [])[:10]:
-                    clean_snippet = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
-                    results.append({
-                        "title": item.get('title'),
-                        "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(item.get('title'))}",
-                        "snippet": clean_snippet
-                    })
-        except Exception as e:
-            print("[INFO] Engine 2 fallback trigger:", e)
+        print("[ERROR during web search]:", e)
 
     return results
 
