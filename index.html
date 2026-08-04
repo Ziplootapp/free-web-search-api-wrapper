@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZipLoot — Free Multi-Engine Web Search REST API Gateway (SerpAPI Alternative)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #000510;
+      --panel: rgba(8, 14, 42, 0.72);
+      --panel-hard: #050c22;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-lit: rgba(100, 110, 255, 0.35);
+      --ink-0: #ffffff;
+      --ink-1: #e2e8f0;
+      --ink-2: #94a3b8;
+      --cyan: #00f2fe;
+      --indigo: #6366f1;
+      --purple: #8b5cf6;
+      --emerald: #10b981;
+      --grd-a: linear-gradient(135deg, #00f2fe 0%, #6366f1 50%, #8b5cf6 100%);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--void);
+      background-image: radial-gradient(circle, rgba(129, 140, 248, 0.06) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: var(--ink-1);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 60px;
+      overflow-x: hidden;
+    }
+
+    .blob1, .blob2 {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(120px);
+      opacity: 0.18;
+      z-index: 0;
+    }
+    .blob1 { width: 600px; height: 600px; background: #6366f1; top: -150px; left: -150px; }
+    .blob2 { width: 500px; height: 500px; background: #00f2fe; bottom: -100px; right: -100px; }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      padding: 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--grd-a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+    .brand-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      background: var(--grd-a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--emerald);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .hero {
+      text-align: center;
+      padding: 50px 0 35px;
+    }
+    .hero-tag {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 100px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid var(--border-lit);
+      color: #a5b4fc;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--ink-0);
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .hero p {
+      color: var(--ink-2);
+      font-size: 17px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .hero-sites {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+    .site-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border-radius: 100px;
+      background: rgba(8, 14, 42, 0.8);
+      border: 1px solid var(--border-lit);
+      color: var(--ink-0);
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.25s;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .site-badge:hover {
+      background: var(--indigo);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(99, 102, 241, 0.5);
+    }
+
+    .search-card {
+      background: var(--panel);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border-lit);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(99, 102, 241, 0.1);
+      margin-bottom: 35px;
+    }
+    .input-wrapper {
+      display: flex;
+      gap: 12px;
+      position: relative;
+    }
+    .search-input {
+      flex: 1;
+      background: var(--panel-hard);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      color: var(--ink-0);
+      font-size: 16px;
+      outline: none;
+      transition: all 0.25s;
+    }
+    .search-input:focus {
+      border-color: var(--indigo);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+    }
+    .btn-search {
+      background: var(--grd-a);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 0 32px;
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-search:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(99, 102, 241, 0.6);
+    }
+    
+    .suggestions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    .sug-title {
+      font-size: 13px;
+      color: var(--ink-2);
+      font-weight: 500;
+    }
+    .sug-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 4px 14px;
+      font-size: 13px;
+      color: var(--ink-1);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sug-chip:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--indigo);
+      color: #fff;
+    }
+
+    .results-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .tab-group {
+      display: flex;
+      background: var(--panel-hard);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--ink-2);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn.active {
+      background: var(--indigo);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.4);
+    }
+    .meta-metrics {
+      display: flex;
+      gap: 12px;
+    }
+    .metric-pill {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--cyan);
+    }
+
+    .results-grid {
+      display: grid;
+      gap: 16px;
+    }
+    .result-card {
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      transition: all 0.25s;
+    }
+    .result-card:hover {
+      border-color: var(--border-lit);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+    .result-url {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--cyan);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      word-break: break-all;
+    }
+    .result-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink-0);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 8px;
+      transition: color 0.2s;
+    }
+    .result-title:hover {
+      color: var(--cyan);
+    }
+    .result-snippet {
+      color: var(--ink-2);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .json-box {
+      background: #050a18;
+      border: 1px solid var(--border-lit);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+    }
+    .json-box pre {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: var(--ink-1);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      background: var(--indigo);
+      color: #fff;
+    }
+
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      color: var(--ink-2);
+      font-size: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 30px;
+    }
+    footer a {
+      color: var(--indigo);
+      text-decoration: none;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="blob1"></div>
+  <div class="blob2"></div>
+
+  <div class="wrap">
+    <header>
+      <a href="https://ziploot.app" class="brand" target="_blank">
+        <div class="brand-logo">🚀</div>
+        <div class="brand-title">ZipLoot Studio</div>
+      </a>
+      <div class="status-badge">
+        <div class="pulse-dot"></div>
+        <span>REST API Server Active (Port 8000)</span>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="hero-tag">Zero-Latency Web Search Gateway</div>
+      <h1>Free Web Search REST API</h1>
+      <p>100% Free, high-throughput multi-engine web search gateway API wrapper (SerpAPI & Google API Alternative).</p>
+      
+      <div class="hero-sites">
+        <a href="https://ziploot.app" target="_blank" class="site-badge">
+          🌐 <span>ziploot.app</span>
+        </a>
+        <a href="https://ziploot.vercel.app" target="_blank" class="site-badge">
+          ⚡ <span>ziploot.vercel.app</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="search-card">
+      <div class="input-wrapper">
+        <input type="text" id="q" class="search-input" value="ziploot github" placeholder="Type search query here..." onkeydown="if(event.key==='Enter') runSearch()" />
+        <button class="btn-search" onclick="runSearch()">
+          <span>🔍</span> Search API
+        </button>
+      </div>
+
+      <div class="suggestions">
+        <span class="sug-title">Try Quick Queries:</span>
+        <span class="sug-chip" onclick="setQuery('ziploot github')">ZipLoot GitHub</span>
+        <span class="sug-chip" onclick="setQuery('DeepSeek R1 free setup guide')">DeepSeek R1 Guide</span>
+        <span class="sug-chip" onclick="setQuery('Free Cloudflare Workers AI Bot')">Cloudflare Workers AI</span>
+        <span class="sug-chip" onclick="setQuery('Free VPS Oracle Cloud 2026')">Free VPS Setup</span>
+      </div>
+    </div>
+
+    <div class="results-bar">
+      <div class="tab-group">
+        <button class="tab-btn active" id="tab-visual" onclick="switchTab('visual')">
+          🌐 Visual Cards (<span id="count-badge">0</span>)
+        </button>
+        <button class="tab-btn" id="tab-json" onclick="switchTab('json')">
+          💻 Raw JSON API
+        </button>
+      </div>
+
+      <div class="meta-metrics">
+        <div class="metric-pill" id="latency-pill">Latency: -- ms</div>
+        <div class="metric-pill" id="status-pill">Status: Ready</div>
+      </div>
+    </div>
+
+    <div id="view-visual" class="results-grid">
+      <div class="result-card" style="text-align: center; padding: 40px; color: var(--ink-2);">
+        Enter a search query above and click <strong>Search API</strong> to test instant live results.
+      </div>
+    </div>
+
+    <div id="view-json" class="json-box hidden">
+      <button class="copy-btn" onclick="copyJson()">📋 Copy JSON</button>
+      <pre id="json-output">// Structured JSON Response will appear here...</pre>
+    </div>
+
+    <footer>
+      Powered by <a href="https://ziploot.app" target="_blank">ZipLoot Ecosystem</a> — Built for Autonomous AI Agents & Developers.
+    </footer>
+
+  </div>
+
+  <script>
+    let currentData = null;
+
+    function setQuery(text) {
+      document.getElementById('q').value = text;
+      runSearch();
+    }
+
+    function switchTab(mode) {
+      const tabVisual = document.getElementById('tab-visual');
+      const tabJson = document.getElementById('tab-json');
+      const viewVisual = document.getElementById('view-visual');
+      const viewJson = document.getElementById('view-json');
+
+      if (mode === 'visual') {
+        tabVisual.classList.add('active');
+        tabJson.classList.remove('active');
+        viewVisual.classList.remove('hidden');
+        viewJson.classList.add('hidden');
+      } else {
+        tabJson.classList.add('active');
+        tabVisual.classList.remove('active');
+        viewJson.classList.remove('hidden');
+        viewJson.classList.add('hidden');
+      }
+    }
+
+    async function runSearch() {
+      const query = document.getElementById('q').value.trim();
+      if (!query) return;
+
+      const viewVisual = document.getElementById('view-visual');
+      const jsonOutput = document.getElementById('json-output');
+      const statusPill = document.getElementById('status-pill');
+      const latencyPill = document.getElementById('latency-pill');
+      const countBadge = document.getElementById('count-badge');
+
+      viewVisual.innerHTML = '<div class="result-card" style="text-align:center; padding:40px; color:var(--cyan);">🚀 Fetching zero-latency search results...</div>';
+      jsonOutput.innerText = '// Fetching live JSON data...';
+      statusPill.innerText = 'Status: Fetching...';
+
+      const startTime = performance.now();
+
+      try {
+        const res = await fetch('/api/search?q=' + encodeURIComponent(query));
+        const data = await res.json();
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
+
+        currentData = data;
+        latencyPill.innerText = `Latency: ${duration} ms`;
+        statusPill.innerText = `Status: 200 OK (${data.status})`;
+        countBadge.innerText = data.results ? data.results.length : 0;
+
+        jsonOutput.innerText = JSON.stringify(data, null, 2);
+
+        if (data.results && data.results.length > 0) {
+          viewVisual.innerHTML = data.results.map(item => `
+            <div class="result-card">
+              <div class="result-url">🌐 ${escapeHtml(item.url)}</div>
+              <a href="${escapeHtml(item.url)}" target="_blank" class="result-title">${escapeHtml(item.title)}</a>
+              <div class="result-snippet">${escapeHtml(item.snippet || 'No snippet available.')}</div>
+            </div>
+          `).join('');
+        } else {
+          viewVisual.innerHTML = '<div class="result-card" style="text-align:center; color:var(--ink-2);">No results found for this query.</div>';
+        }
+      } catch (err) {
+        statusPill.innerText = 'Status: Error';
+        viewVisual.innerHTML = `<div class="result-card" style="color:#ef4444;">Error fetching API: ${err.message}</div>`;
+        jsonOutput.innerText = JSON.stringify({ error: err.message }, null, 2);
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function copyJson() {
+      if (!currentData) return;
+      navigator.clipboard.writeText(JSON.stringify(currentData, null, 2));
+      alert('JSON copied to clipboard!');
+    }
+
+    runSearch();
+  </script>
+</body>
+</html>
