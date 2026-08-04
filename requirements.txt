@@ -1,0 +1,2 @@
+# ZipLoot Free Web Search REST API Gateway
+# Uses 100% Python Standard Library (0 pip dependencies required!)
