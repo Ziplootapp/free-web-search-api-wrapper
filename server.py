@@ -18,6 +18,7 @@ import json
 import html
 import urllib.request
 import urllib.parse
+import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Force UTF-8 encoding on Windows console
@@ -25,7 +26,7 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-PORT = 8000
+DEFAULT_PORT = 8000
 
 def free_web_search(query):
     """
@@ -173,15 +174,35 @@ class ZipLootSearchHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 def run_server():
-    server_address = ('', PORT)
-    httpd = HTTPServer(server_address, ZipLootSearchHandler)
+    port = DEFAULT_PORT
+    httpd = None
+    
+    # Smart Automatic Port Fallback (8000 -> 8001 -> 8002)
+    for p in range(8000, 8010):
+        try:
+            httpd = HTTPServer(('', p), ZipLootSearchHandler)
+            port = p
+            break
+        except OSError:
+            continue
+
+    if not httpd:
+        print("[ERROR] Could not bind to any port in range 8000-8010. Please close existing servers.", file=sys.stderr)
+        sys.exit(1)
+
     print("======================================================================")
     print("  🚀 ZipLoot Free Web Search REST API Gateway Server Running!")
-    print(f"  ⚡ Local Web UI:   http://localhost:{PORT}/")
-    print(f"  ⚡ API Endpoint:   http://localhost:{PORT}/api/search?q=ziploot+github")
+    print(f"  ⚡ Local Web UI:   http://localhost:{port}/")
+    print(f"  ⚡ API Endpoint:   http://localhost:{port}/api/search?q=ziploot+github")
     print("  🌐 Official Site:  https://ziploot.app")
     print("  ⚡ Vercel Mirror:  https://ziploot.vercel.app")
     print("======================================================================")
+
+    try:
+        webbrowser.open(f"http://localhost:{port}/")
+    except Exception:
+        pass
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
