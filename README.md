@@ -25,7 +25,7 @@ Run a single command in your terminal to automatically download, extract, and la
 
 ### 💻 For Windows (PowerShell 1-Click):
 ```powershell
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr -useb "https://github.com/Ziplootapp/free-web-search-api-wrapper/archive/refs/heads/main.zip" -OutFile "$env:TEMP\ziploot-search.zip"; Expand-Archive -Path "$env:TEMP\ziploot-search.zip" -DestinationPath "$env:TEMP\ziploot-search-app" -Force; Set-Location "$env:TEMP\ziploot-search-appree-web-search-api-wrapper-main"; .\deploy_windows.bat
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr -useb "https://github.com/Ziplootapp/free-web-search-api-wrapper/archive/refs/heads/main.zip" -OutFile "$env:TEMP/ziploot-search.zip"; Expand-Archive -Path "$env:TEMP/ziploot-search.zip" -DestinationPath "$env:TEMP/ziploot-search-app" -Force; Set-Location "$env:TEMP/ziploot-search-app/free-web-search-api-wrapper-main"; .\deploy_windows.bat
 ```
 
 ### 🐧 For Linux & macOS (Bash 1-Click):
