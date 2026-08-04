@@ -21,16 +21,16 @@ Access our official apps and developer utilities:
 
 ## 🚀 1-Click Multi-OS Auto-Installer & Launcher
 
-Run a single command in your terminal to download, setup, and launch your ZipLoot Free Google Search API server on `http://localhost:8000/` in **1-Click**!
+Run a single command in your terminal to automatically download, extract, and launch your ZipLoot Free Google Search API server on `http://localhost:8000/` in **1-Click**!
 
 ### 💻 For Windows (PowerShell 1-Click):
 ```powershell
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr -useb "https://raw.githubusercontent.com/ziploot/free-web-search-api-wrapper/main/deploy_windows.bat" -OutFile "$env:TEMP\deploy_windows.bat"; & "$env:TEMP\deploy_windows.bat"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr -useb "https://github.com/Ziplootapp/free-web-search-api-wrapper/archive/refs/heads/main.zip" -OutFile "$env:TEMP\ziploot-search.zip"; Expand-Archive -Path "$env:TEMP\ziploot-search.zip" -DestinationPath "$env:TEMP\ziploot-search-app" -Force; Set-Location "$env:TEMP\ziploot-search-appree-web-search-api-wrapper-main"; .\deploy_windows.bat
 ```
 
 ### 🐧 For Linux & macOS (Bash 1-Click):
 ```bash
-curl -sSL https://raw.githubusercontent.com/ziploot/free-web-search-api-wrapper/main/deploy_linux.sh -o /tmp/deploy_linux.sh && chmod +x /tmp/deploy_linux.sh && /tmp/deploy_linux.sh
+curl -sSL https://github.com/Ziplootapp/free-web-search-api-wrapper/archive/refs/heads/main.zip -o /tmp/ziploot-search.zip && unzip -q /tmp/ziploot-search.zip -d /tmp/ziploot-search-app && cd /tmp/ziploot-search-app/free-web-search-api-wrapper-main && chmod +x deploy_linux.sh && ./deploy_linux.sh
 ```
 
 ---
@@ -67,7 +67,7 @@ curl -s "http://localhost:8000/api/search?q=ziploot+github"
   "results": [
     {
       "title": "ZipLoot Developer Platform & GitHub Ecosystem",
-      "url": "https://github.com/ziploot",
+      "url": "https://github.com/Ziplootapp",
       "snippet": "Explore free automated tools, cloud scripts, and open-source web utilities by ZipLoot Team."
     }
   ]
