@@ -1,202 +1,139 @@
-# ZipLoot 100% Free Web Search REST API Gateway (SerpAPI Alternative)
+import os
+import sys
+import io
 import json
 import urllib.request
 import urllib.parse
 import re
 import socketserver
-import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# Ensure UTF-8 encoding on Windows console to prevent crashes
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 PORT = 8000
 
-class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
-    daemon_threads = True
-
-def perform_web_search(query):
-    results = []
+def free_web_search(query, max_results=10):
+    """
+    ZipLoot Universal Free Web Search Engine (SerpAPI & Google Search API Alternative)
+    Official Web App: https://ziploot.app | Vercel Mirror: https://ziploot.vercel.app
+    """
+    url = "https://html.duckduckgo.com/html/"
+    data = urllib.parse.urlencode({'q': query}).encode('utf-8')
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://html.duckduckgo.com",
+        "Referer": "https://html.duckduckgo.com/"
+    }
     
-    # Engine 1: Bing Global Search Engine
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    
     try:
-        bing_url = f"https://www.bing.com/search?q={urllib.parse.quote(query)}"
-        req = urllib.request.Request(
-            bing_url, 
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'}
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            html = resp.read().decode('utf-8', errors='ignore')
+        with urllib.request.urlopen(req, timeout=10) as response:
+            raw_html = response.read().decode('utf-8', errors='ignore')
             
-        links_titles = re.findall(r'<h2[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
+        results = []
+        links = re.findall(r'<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', raw_html, re.DOTALL)
+        snippets = re.findall(r'<a[^>]*class="result__snippet"[^>]*>(.*?)</a>|<td[^>]*class="result__snippet"[^>]*>(.*?)</td>', raw_html, re.DOTALL)
         
-        for link, title in links_titles[:10]:
-            clean_title = re.sub(r'<[^>]+>', '', title).strip()
-            if link.startswith('http') and 'bing.com' not in link and 'microsoft.com' not in link:
-                results.append({
-                    "title": clean_title,
-                    "url": link,
-                    "snippet": f"ZipLoot Verified Web Result for {clean_title}."
-                })
-    except Exception as e:
-        print("[INFO Engine 1 Bing]:", e)
-
-    # Engine 2: DuckDuckGo Search Engine Fallback
-    if not results:
-        try:
-            url = "https://html.duckduckgo.com/html/"
-            data = urllib.parse.urlencode({'q': query}).encode('utf-8')
-            req = urllib.request.Request(
-                url, 
-                data=data, 
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Content-Type': 'application/x-www-form-urlencoded'}
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                html = resp.read().decode('utf-8', errors='ignore')
+        for i, (raw_url, raw_title) in enumerate(links):
+            if i >= max_results:
+                break
                 
-            pattern1 = r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>'
-            pattern2 = r'<a[^>]+href="([^"]+)"[^>]*class="result__a"[^>]*>(.*?)</a>'
-            matches = re.findall(pattern1, html, re.I | re.S) + re.findall(pattern2, html, re.I | re.S)
-            snips = re.findall(r'<(?:a|div)[^>]+class="result__snippet"[^>]*>(.*?)</(?:a|div)>', html, re.I | re.S)
+            title = re.sub(r'<[^>]+>', '', raw_title).strip()
+            title = urllib.parse.unquote(title)
             
-            for i, m in enumerate(matches[:10]):
-                link = m[0]
-                title = m[1]
-                clean_title = re.sub(r'<[^>]+>', '', title).strip()
-                snippet_text = re.sub(r'<[^>]+>', '', snips[i]).strip() if i < len(snips) else "ZipLoot Developer Platform."
-                clean_url = urllib.parse.unquote(link.split('uddg=')[1].split('&')[0]) if 'uddg=' in link else link
+            snippet_text = ""
+            if i < len(snippets):
+                snip_tuple = snippets[i]
+                raw_snip = snip_tuple[0] or snip_tuple[1] or ""
+                snippet_text = re.sub(r'<[^>]+>', '', raw_snip).strip()
+                
+            clean_url = raw_url
+            if "uddg=" in raw_url:
+                try:
+                    clean_url = urllib.parse.unquote(raw_url.split("uddg=")[1].split("&")[0])
+                except Exception:
+                    clean_url = raw_url
+            
+            if title and clean_url:
                 results.append({
-                    "title": clean_title,
+                    "title": title,
                     "url": clean_url,
                     "snippet": snippet_text
                 })
-        except Exception as e:
-            print("[INFO Engine 2 DDG]:", e)
-
-    # Engine 3: Wikipedia Search API Fallback
-    if not results:
-        try:
-            wiki_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
-            req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode('utf-8'))
-                for item in data.get('query', {}).get('search', [])[:10]:
-                    clean_snippet = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
-                    title = item.get('title', '')
-                    clean_url = "https://en.wikipedia.org/wiki/" + urllib.parse.quote(title)
-                    results.append({
-                        "title": title,
-                        "url": clean_url,
-                        "snippet": clean_snippet
-                    })
-        except Exception as e:
-            print("[INFO Engine 3 Wiki]:", e)
-
-    return results
-
-HTML_DASHBOARD = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZipLoot Free Web Search API (SerpAPI Alternative)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #070b14; color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 0 0 40px 0; display: flex; flex-direction: column; align-items: center; }
-        .wrapper { max-width: 960px; width: 100%; padding: 40px 20px; }
-        .header-title { font-size: 26px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .header-subtitle { color: #94a3b8; font-size: 15px; margin-bottom: 28px; }
-        .search-bar-row { display: flex; gap: 12px; margin-bottom: 30px; }
-        .search-input { flex: 1; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 14px 18px; color: #fff; font-size: 15px; outline: none; transition: border 0.2s; }
-        .search-input:focus { border-color: #6366f1; }
-        .search-btn { background: #6366f1; color: #fff; border: none; padding: 0 28px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: background 0.2s; }
-        .search-btn:hover { background: #4f46e5; }
-        .json-card { background: #0b1120; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-        pre { font-family: 'Fira Code', monospace; font-size: 13.5px; line-height: 1.6; color: #38bdf8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
-    </style>
-</head>
-<body>
-    <!-- ZipLoot Official Brand Header -->
-    <div id="ziploot-official-bar" style="position: relative; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; margin: 0 !important; top: 0 !important; left: 0 !important; z-index: 9999999 !important; background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%) !important; border-bottom: 1px solid rgba(99, 102, 241, 0.4) !important; padding: 8px 16px !important; text-align: center !important; font-family: system-ui, -apple-system, sans-serif !important; font-size: 13.5px !important; font-weight: 600 !important; color: #f8fafc !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 12px !important; flex-wrap: wrap !important; box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;">
-        <span>🚀 Official Portal: <a href="https://ziploot.app" target="_blank" rel="noopener" style="color: #818cf8 !important; text-decoration: none !important; font-weight: 700 !important; border-bottom: 1px solid #818cf8 !important;">ziploot.app</a></span>
-        <span style="color: #64748b !important;">•</span>
-        <span>Ecosystem Mirror: <a href="https://ziploot.vercel.app" target="_blank" rel="noopener" style="color: #38bdf8 !important; text-decoration: none !important; font-weight: 600 !important;">ziploot.vercel.app</a></span>
-    </div>
-
-    <div class="wrapper">
-        <div class="header-title">🚀 ZipLoot Free Web Search API (SerpAPI Alternative)</div>
-        <div class="header-subtitle">Type a search query below to get instant structured JSON results without any API key!</div>
-        
-        <div class="search-bar-row">
-            <input type="text" id="queryInput" class="search-input" value="ziploot vercel" placeholder="Type a search query..." onkeydown="if(event.key==='Enter') runSearch()">
-            <button id="searchBtn" class="search-btn" onclick="runSearch()">Search API</button>
-        </div>
-
-        <div class="json-card">
-            <pre id="jsonViewer">Loading live search API results...</pre>
-        </div>
-    </div>
-
-    <script>
-        async function runSearch() {
-            var q = document.getElementById('queryInput').value.trim();
-            if (!q) return;
-            var viewer = document.getElementById('jsonViewer');
-            viewer.innerText = '⚡ Fetching structured search API results for "' + q + '"...';
-            
-            try {
-                var res = await fetch('/api/search?q=' + encodeURIComponent(q));
-                var data = await res.json();
-                viewer.innerText = JSON.stringify(data, null, 2);
-            } catch (err) {
-                viewer.innerText = JSON.stringify({ error: err.message }, null, 2);
-            }
+                
+        return {
+            "status": "success",
+            "provider": "ZipLoot Free Search Gateway Engine (https://ziploot.app)",
+            "query": query,
+            "count": len(results),
+            "results": results
         }
-        window.onload = runSearch;
-    </script>
-</body>
-</html>"""
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "provider": "ZipLoot Free Search Gateway Engine (https://ziploot.app)",
+            "message": str(e)
+        }
 
-class SearchAPIHandler(BaseHTTPRequestHandler):
+class SimpleSearchHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed_path = urllib.parse.urlparse(self.path)
-        if parsed_path.path == "/api/search":
-            params = urllib.parse.parse_qs(parsed_path.query)
-            query = params.get("q", [""])[0]
+        params = urllib.parse.parse_qs(parsed_path.query)
+        
+        if parsed_path.path in ["/search", "/api/search"]:
+            query = params.get("q", ["ziploot github"])[0]
             if not query:
                 self.send_response(400)
-                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": "Query parameter 'q' is required"}, indent=2).encode("utf-8"))
+                self.wfile.write(json.dumps({"error": "Missing 'q' query parameter"}, indent=2).encode('utf-8'))
                 return
-
-            print(f"[INFO] Processing web search query: {query}")
-            results = perform_web_search(query)
-
+                
+            res = free_web_search(query)
             self.send_response(200)
-            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("X-Powered-By", "ZipLoot Engine (https://ziploot.app)")
             self.end_headers()
-            response_payload = {
-                "status": "success",
-                "provider": "ZipLoot Free Search Gateway Engine",
-                "query": query,
-                "count": len(results),
-                "results": results
-            }
-            self.wfile.write(json.dumps(response_payload, indent=2).encode("utf-8"))
+            self.wfile.write(json.dumps(res, indent=2, ensure_ascii=False).encode('utf-8'))
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(HTML_DASHBOARD.encode("utf-8"))
+            
+            index_file = os.path.join(os.path.dirname(__file__), "index.html")
+            if os.path.exists(index_file):
+                with open(index_file, "r", encoding="utf-8") as f:
+                    self.wfile.write(f.read().encode("utf-8"))
+            else:
+                self.wfile.write(b"<h1>ZipLoot Free Web Search REST API Server Running</h1>")
 
-def run_server():
-    httpd = ThreadingHTTPServer(("0.0.0.0", PORT), SearchAPIHandler)
-    print(f"==================================================")
-    print(f"  ZIPLOOT FREE WEB SEARCH REST API IS LIVE!       ")
-    print(f"  Web Dashboard: http://localhost:{PORT}/")
-    print(f"  API Endpoint:  http://localhost:{PORT}/api/search?q=ziploot+vercel")
-    print(f"==================================================")
-    httpd.serve_forever()
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
+    daemon_threads = True
 
 if __name__ == "__main__":
-    run_server()
+    port = PORT
+    print("=" * 70)
+    print(f"🚀 ZipLoot Free Web Search REST API Gateway Server")
+    print(f"🌐 Primary App:   https://ziploot.app")
+    print(f"⚡ Vercel Mirror: https://ziploot.vercel.app")
+    print("=" * 70)
+    print(f"Server Running on http://localhost:{port}/")
+    print(f"Endpoints:")
+    print(f"  • Web UI Test:  http://localhost:{port}/")
+    print(f"  • JSON API:     http://localhost:{port}/api/search?q=ziploot+github")
+    print("=" * 70)
+    
+    server = ThreadingHTTPServer(('0.0.0.0', port), SimpleSearchHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nServer stopped.")
