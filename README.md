@@ -101,3 +101,19 @@ free-web-search-api-wrapper/
 Distributed under the **MIT License**. See `LICENSE` for details.
 
 Copyright (c) 2026 **ZipLoot Team** ([ziploot.app](https://ziploot.app) | [ziploot.vercel.app](https://ziploot.vercel.app))
+
+---
+
+## 🌐 Discover More Free Tools on ZipLoot
+
+Check out our full suite of automated web applications and developer tools at **[https://ziploot.app](https://ziploot.app)**:
+
+- 🎥 **[Ad-Free Video Downloader](https://ziploot.app/addfree)** — Fast social video downloads with zero popups.
+- 📄 **[Unlimited PDF Toolset](https://ziploot.app/pdf-toolset)** — Merge, split, compress, and edit PDFs in browser.
+- 📹 **[YouTube Downloader](https://ziploot.app/youtube-downloader)** — Download high quality YouTube videos and audio for free.
+- 🎨 **[Watermark Remover](https://ziploot.app/watermark-remover)** — Remove image watermarks automatically.
+- 🌐 **[Image Translator](https://ziploot.app/image-translator)** — Translate text inside images online instantly.
+
+---
+
+*Maintained with ❤️ by the **[ZipLoot Team](https://ziploot.app)**.*
